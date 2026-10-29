@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CANVAS Bluefy BLE Check</title><style>body{background:#0c171c;color:#f0faf9;font:16px -apple-system,BlinkMacSystemFont,Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto}button{font-size:18px;border:0;border-radius:10px;background:#55dfbc;color:#102b28;padding:16px;width:100%;margin:14px 0}pre{white-space:pre-wrap;word-break:break-word;background:#1b2c33;border-radius:10px;padding:15px}h1{font-size:27px}</style></head><body><h1>CANVAS BLE Check v1.2</h1><p>Test-only page. No secrets or Wi-Fi passwords needed.</p><p id="stage">HTML loaded. JavaScript has not started.</p><button id="connect" onclick="bleConnect()">Find CANVAS</button><pre id="log">Waiting for JavaScript...</pre><script>
+(function(){
+  var stage=document.getElementById('stage'),log=document.getElementById('log');
+  function say(t){stage.textContent=t;log.textContent+=(log.textContent?'\n':'')+t;}
+  log.textContent='';
+  window.onerror=function(m,s,l){say('JavaScript error: '+m+' at line '+l);return false;};
+  say('JavaScript started. Secure context: '+(window.isSecureContext?'yes':'no'));
+  say('Web Bluetooth: '+(navigator.bluetooth?'available':'UNAVAILABLE'));
+  say('Web Crypto: '+(window.crypto&&window.crypto.subtle?'available':'unavailable'));
+  window.bleConnect=function(){
+    say('Button tapped.');
+    if(!navigator.bluetooth){say('Bluetooth API missing in this browser');return;}
+    try{
+      navigator.bluetooth.requestDevice({filters:[{namePrefix:'CANVAS'}],optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']}).then(function(dev){
+        say('Selected: '+(dev.name||'unnamed'));
+        return dev.gatt.connect();
+      }).then(function(server){
+        say('GATT connected');
+        return server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+      }).then(function(svc){
+        say('CANVAS service discovered!');
+        return svc.getCharacteristic('0000ffe3-0000-1000-8000-00805f9b34fb');
+      }).then(function(chr){return chr.readValue();}).then(function(value){
+        var bytes=new Uint8Array(value.buffer,value.byteOffset,value.byteLength),str='';
+        for(var i=0;i<bytes.length;i++)str+=String.fromCharCode(bytes[i]);
+        say('Wi-Fi list: '+str);
+      }).catch(function(e){say('BLE error: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e));});
+    }catch(e){say('Sync error: '+(e&&e.message?e.message:e));}
+  };
+  say('Ready. Tap Find CANVAS.');
+})();
+</script></body></html>
